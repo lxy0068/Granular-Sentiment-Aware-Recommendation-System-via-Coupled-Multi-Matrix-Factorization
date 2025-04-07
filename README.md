@@ -13,61 +13,88 @@ A hybrid recommendation framework that integrates **multi-matrix factorization**
 - **Hyperbolic Tangent-Normalized Sentiment Matrix**: Preserves contextual polarity while mitigating sparse observations
 - **Tripartite Optimization**: Harmonizes rating reconstruction (14.6% RMSE improvement), sentiment alignment, and descriptor mapping
 - **Cold-Start Resilience**: Maintains 85% recommendation quality with limited interaction data
-- **Dual-Modal Explanations**: Generates radar charts and text summaries for interpretable recommendations
 
 ---
 
 ## 🚀 Quick Start
 
-### 📦 Installation
-```bash
-# Clone repository
-git clone https://github.com/your_username/granular-sentiment-recommendation.git
-cd granular-sentiment-recommendation
+### 📦 Installation & Setup
 
-# Install dependencies
+#### 1. Clone Repository & Install Dependencies
+```bash
+# Clone with dataset submodule
+git clone --recurse-submodules https://github.com/lxy0068/Granular-Sentiment-Aware-Recommendation-System-via-Coupled-Multi-Matrix-Factorization.git
+cd Granular-Sentiment-Aware-Recommendation-System-via-Coupled-Multi-Matrix-Factorization
+
+# Install core requirements (Python 3.8+ required)
 pip install -r requirements.txt
+
+# Initialize dataset structure (after downloading Data.zip)
+unzip Data.zip -d Data/dianping/
 ```
 
-### 🏃 Training & Inference
+#### 2. Dataset Preparation
 ```bash
-# Train model on Dianping dataset (8000 iterations)
-python Core/Train.py --dataset dianping --num_iter 8000 --lr 0.1
-
-# Generate Top-100 recommendations for user 123
-python Core/Output.py --user_id 123 --top_k 100 --output_dir results/
+# Validate dataset integrity (Core/DataLoader.py required format)
+python utils/verify_dataset.py \
+    --train_file Data/dianping/uiawr_id.train \
+    --test_file Data/dianping/uiawr_id.test \
+    --mapping_dir Data/dianping/mappings/
 ```
 
----
+### 🚀 Training Workflows
 
-## 🧩 Project Architecture
-### 📂 Directory Structure
+#### Option A: Automatic Hyperparameter Search
+```bash
+# Run grid search with 1000 parameter combinations
+python Main_autoparam.py \
+    --dataset dianping \
+    --max_iters 8000 \
+    --param_space "grid" \  # Alternative: "random"
+    --num_workers 4 \
+    --log_dir runs/autoparam
 ```
-├── Core/                   # Core algorithms
-│   ├── config.py           # Hyperparameter configurations
-│   ├── DataLoader.py       # User-item-feature-word interaction loader
-│   ├── Loss.py             # Multi-task loss function (MSE + MAE + L2)
-│   └── Train.py            # Adagrad optimizer with non-negative constraints
-│
-├── Data/                   # Dataset management
-│   ├── dianping/           # Chinese review dataset
-│   │   ├── uiawr_id.train  # Training interactions
-│   │   └── word.senti.map  # Precomputed sentiment lexicon
-│   └── yelp/               # Cross-cultural validation dataset
-│
-├── utils/                  # Data processing & visualization
-│   ├── dianping_datapro.py # Feature engineering pipeline
-│   ├── transDataToNpy.py   # Matrix format conversion
-│   └── visul_metric_*.py   # Performance visualization tools
-│
-└── results/                # Recommendation outputs
+
+#### Option B: Manual Configuration
+```bash
+# 1. Edit hyperparameters in Core/config.py
+# 2. Start training with saved config
+python Main_manually.py \
+    --config Core/config.py \
+    --checkpoint_dir models/ \
+    --log_file results/training_metrics.csv
+```
+
+### 🔍 Inference & Explanation
+```bash
+# Generate recommendations with dual explanations (adjust user_id format)
+python Core/Output.py \
+    --user_map Data/dianping/mappings/usermap \
+    --item_map Data/dianping/mappings/itemmap \
+    --input_model models/dianping_final.npy \
+    --output_format both \  # Options: [csv|json|both]
+    --explanation_depth 7 \  # Top-7 features per recommendation
+    --min_sentiment_score 0.6
+```
+
+### 📊 Evaluation & Visualization
+```bash
+# Calculate metrics (auto-detects test set from Data/)
+python Metric/metric.py \
+    --pred_file results/recommendations.csv \
+    --true_file Data/dianping/uiawr_id.test \
+    --metrics all  # Options: [mae|rmse|coverage|all]
+
+# Generate training curves (requires matplotlib)
+python utils/visul_metric_dianping.py \
+    --log_file results/training_metrics.csv \
+    --output_dir plots/
 ```
 
 ---
 
 ## 🔍 Model Design
 ### 🧮 Coupled Matrix Decomposition
-<img src="https://via.placeholder.com/600x200?text=Architecture+Diagram" width="600">
 
 Three interconnected matrices are jointly factorized:
 1. **User-Item Interaction Matrix** (R ∈ ℝ^{M×N})
@@ -107,7 +134,9 @@ Three interconnected matrices are jointly factorized:
 |------------------|-------------------|-----------------|
 | 91.7%            | 89.4%             | 92.4%           |
 
----
+![4he1_3](https://github.com/user-attachments/assets/ca565320-6240-48f5-8f57-22b854a25915)
+![dianping_MAE_RMSE](https://github.com/user-attachments/assets/25651762-8b9f-4c7c-a250-96f4141e166b)
+![yelp_MAE_RMSE](https://github.com/user-attachments/assets/65914ca4-5b56-4fae-bf77-debe2b0a4d20)
 
 ---
 
